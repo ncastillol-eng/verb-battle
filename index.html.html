@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Verb Battle — ESL Game Show</title>
+  <style>
+    :root{
+      --bg:#0f1220; --panel:#171b2e; --card:#1f2540; --text:#f6f7fb; --muted:#aeb6d0;
+      --border:#343b5e; --accent:#7c5cff; --accent2:#24c1ff; --green:#22c55e; --red:#ef4444;
+      --gold:#f59e0b; --purple:#a855f7; --pink:#ec4899; --cyan:#06b6d4;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,Arial,Helvetica,sans-serif;background:linear-gradient(180deg,#0c1020,#11172a);color:var(--text);min-height:100vh}
+    button,input,select{font:inherit}
+    button{cursor:pointer}
+    .app{max-width:1180px;margin:0 auto;padding:24px}
+    .top{display:flex;gap:16px;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-bottom:18px}
+    .eyebrow{font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);font-weight:800}
+    h1{margin:4px 0 4px;font-size:clamp(28px,4vw,44px)}
+    .subtitle{color:var(--muted)}
+    .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--border);border-radius:999px;background:rgba(255,255,255,.03);font-size:13px;font-weight:800}
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap}
+    .btn{border:1px solid var(--border);background:#222945;color:var(--text);border-radius:14px;padding:11px 15px;font-weight:800;min-height:44px}
+    .btn:hover{filter:brightness(1.08)}
+    .btn:active{transform:scale(.98)}
+    .btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));border:none}
+    .btn.good{background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.5)}
+    .btn.bad{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.5)}
+    .btn.gold{background:rgba(245,158,11,.16);border-color:rgba(245,158,11,.5)}
+    .grid-main{display:grid;grid-template-columns:1.08fr .92fr;gap:18px;align-items:start}
+    .card{background:rgba(31,37,64,.92);border:1px solid var(--border);border-radius:22px;padding:18px;box-shadow:0 10px 28px rgba(0,0,0,.18)}
+    .panel{background:rgba(23,27,46,.9);border:1px solid var(--border);border-radius:18px;padding:16px}
+    .section-title{font-weight:900;font-size:18px}
+    .muted{color:var(--muted)}
+    .teams{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:18px}
+    .team{padding:14px;border:1px solid var(--border);border-radius:16px;background:#171b2e}
+    .team.active{outline:3px solid var(--accent);outline-offset:1px}
+    .team-row{display:flex;justify-content:space-between;gap:10px;align-items:center}
+    .team-name{width:100%;background:transparent;color:var(--text);border:none;font-weight:900;font-size:17px;min-width:0}
+    .score{font-size:26px;font-weight:900}
+    .wheel-wrap{position:relative;max-width:470px;margin:0 auto}
+    .pointer{position:absolute;left:50%;transform:translateX(-50%);top:-10px;z-index:3;font-size:38px}
+    svg{width:100%;height:auto;display:block}
+    #wheel{transition:transform 2.45s cubic-bezier(.11,.74,.12,1)}
+    .challenge{position:relative;overflow:hidden;min-height:330px}
+    .challenge-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}
+    .verb{font-size:clamp(42px,7vw,74px);font-weight:1000;line-height:1;margin:8px 0}
+    .timer{font-size:38px;font-weight:1000}
+    .question{font-size:20px;font-weight:800;line-height:1.4;margin:18px 0}
+    .answer-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .field{width:100%;min-height:48px;border-radius:12px;border:1px solid var(--border);background:#11182a;color:var(--text);padding:11px 13px}
+    .feedback{min-height:32px;margin-top:14px;font-weight:900;font-size:18px}
+    .power{margin-top:12px}
+    .power-title{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:800}
+    .power-text{font-size:20px;font-weight:900;margin-top:4px}
+    details{margin-top:18px}
+    summary{cursor:pointer;font-weight:900;font-size:18px}
+    .controls{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-top:16px}
+    label{font-size:13px;font-weight:800}
+    select{width:100%;margin-top:6px;min-height:44px;border-radius:12px;border:1px solid var(--border);background:#11182a;color:var(--text);padding:8px}
+    .toggles{display:flex;gap:18px;flex-wrap:wrap;margin-top:16px}
+    .control-buttons{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:16px}
+    .confetti{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+    .confetti i{position:absolute;width:8px;height:12px;border-radius:3px;animation:fall .9s ease-out forwards}
+    @keyframes fall{0%{transform:translateY(-10px) rotate(0);opacity:1}100%{transform:translateY(280px) rotate(420deg);opacity:0}}
+    .hidden{display:none!important}
+    .podium-screen{margin-top:18px}
+    .podium{display:flex;justify-content:center;align-items:flex-end;gap:12px;min-height:270px;margin-top:16px}
+    .podium-col{width:30%;max-width:180px;min-width:90px;border:1px solid var(--border);border-radius:16px 16px 8px 8px;padding:14px;text-align:center;font-weight:900}
+    .p1{height:210px;background:rgba(245,158,11,.18)}
+    .p2{height:165px;background:rgba(148,163,184,.16)}
+    .p3{height:135px;background:rgba(180,83,9,.16)}
+    .summary-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:18px}
+    .stat{background:#171b2e;border:1px solid var(--border);border-radius:14px;padding:12px;text-align:center}
+    .stat b{display:block;font-size:20px;margin-top:4px}
+    @media(max-width:900px){.grid-main{grid-template-columns:1fr}.controls{grid-template-columns:repeat(3,1fr)}}
+    @media(max-width:620px){.app{padding:14px}.teams,.answer-grid,.control-buttons{grid-template-columns:1fr}.controls{grid-template-columns:repeat(2,1fr)}.summary-grid{grid-template-columns:repeat(2,1fr)}}
+    @media(prefers-reduced-motion:reduce){#wheel,.confetti i{transition:none;animation:none}}
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div>
+      <div class="eyebrow">ESL GAME SHOW</div>
+      <h1>Verb Battle</h1>
+      <div class="subtitle">Spin • answer • power up • survive</div>
+    </div>
+    <div class="toolbar">
+      <span id="roundChip" class="pill">Round 1 / 10</span>
+      <button id="soundBtn" class="btn">🔊 Sound</button>
+      <button id="endBtn" class="btn gold">🏆 End Game</button>
+    </div>
+  </div>
+
+  <div id="teams" class="teams"></div>
+
+  <div class="grid-main">
+    <section class="card">
+      <div class="team-row" style="margin-bottom:8px">
+        <div>
+          <div class="section-title">🎡 Verb Wheel</div>
+          <div id="turnText" class="muted" style="font-size:13px">Team A's turn</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+          <span id="levelChip" class="pill">A2–B1</span>
+          <span id="typeChip" class="pill">Mixed</span>
+        </div>
+      </div>
+      <div class="wheel-wrap">
+        <div class="pointer">▼</div>
+        <svg id="wheel" viewBox="0 0 400 400" aria-label="Verb roulette wheel"></svg>
+      </div>
+      <button id="spinBtn" class="btn primary" style="width:100%;font-size:20px;margin-top:10px">🎡 SPIN!</button>
+    </section>
+
+    <div>
+      <section class="card challenge">
+        <div class="challenge-head">
+          <div>
+            <div id="challengeLabel" class="eyebrow">READY?</div>
+            <div id="verbText" class="verb">—</div>
+          </div>
+          <div style="text-align:right">
+            <div class="muted" style="font-size:12px">Timer</div>
+            <div id="timerText" class="timer">—</div>
+          </div>
+        </div>
+        <div id="questionText" class="question">Spin the wheel to start.</div>
+        <div id="answerArea"></div>
+        <div id="feedback" class="feedback" aria-live="polite"></div>
+        <div id="confetti" class="confetti"></div>
+      </section>
+
+      <section class="panel power">
+        <div class="power-title">Power-up</div>
+        <div id="powerText" class="power-text">No power-up yet</div>
+        <div class="muted" style="font-size:12px;margin-top:4px">Power-ups appear randomly during the game.</div>
+      </section>
+    </div>
+  </div>
+
+  <details class="card" open>
+    <summary>🧑‍🏫 Teacher Controls</summary>
+    <div class="controls">
+      <label>Level
+        <select id="levelSelect"><option>A2</option><option selected>A2–B1</option><option>B1</option></select>
+      </label>
+      <label>Verbs
+        <select id="verbTypeSelect"><option>Mixed</option><option>Regular</option><option>Irregular</option></select>
+      </label>
+      <label>Mode
+        <select id="modeSelect"><option>Team Battle</option><option>Solo</option></select>
+      </label>
+      <label>Teams
+        <select id="teamCountSelect"><option>2</option><option>3</option><option>4</option></select>
+      </label>
+      <label>Timer
+        <select id="timerSelect"><option value="0">Off</option><option value="10">10 sec</option><option value="15" selected>15 sec</option><option value="20">20 sec</option><option value="30">30 sec</option></select>
+      </label>
+      <label>Rounds
+        <select id="roundsSelect"><option>10</option><option>15</option><option>20</option></select>
+      </label>
+    </div>
+
+    <div class="toggles">
+      <label><input id="powerToggle" type="checkbox" checked> Power-ups</label>
+      <label><input id="eventToggle" type="checkbox" checked> Surprise events</label>
+      <label><input id="speakingToggle" type="checkbox" checked> Speaking challenges</label>
+    </div>
+
+    <div class="control-buttons">
+      <button id="showBtn" class="btn">👀 Show Answer</button>
+      <button id="skipBtn" class="btn">⏭ Skip</button>
+      <button id="nextBtn" class="btn">➡ Next Team</button>
+      <button id="restartBtn" class="btn bad">↺ Restart</button>
+    </div>
+  </details>
+
+  <section id="podiumScreen" class="card podium-screen hidden">
+    <div style="text-align:center">
+      <div class="eyebrow">GAME OVER</div>
+      <h2 style="font-size:34px;margin:8px 0">🏆 FINAL RESULTS</h2>
+    </div>
+    <div id="podium" class="podium"></div>
+    <div id="summaryGrid" class="summary-grid"></div>
+    <div style="text-align:center;margin-top:18px">
+      <button id="playAgainBtn" class="btn primary">🎮 PLAY AGAIN</button>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+  const verbs = [
+    ['go','went','gone','I','A2'],['eat','ate','eaten','I','A2'],['see','saw','seen','I','A2'],
+    ['buy','bought','bought','I','A2'],['take','took','taken','I','A2'],['write','wrote','written','I','B1'],
+    ['speak','spoke','spoken','I','A2'],['make','made','made','I','A2'],['find','found','found','I','A2'],
+    ['give','gave','given','I','A2'],['come','came','come','I','A2'],['break','broke','broken','I','B1'],
+    ['choose','chose','chosen','I','B1'],['drink','drank','drunk','I','A2'],['forget','forgot','forgotten','I','B1'],
+    ['know','knew','known','I','A2'],['meet','met','met','I','A2'],['run','ran','run','I','A2'],
+    ['send','sent','sent','I','A2'],['sleep','slept','slept','I','A2'],['teach','taught','taught','I','B1'],
+    ['tell','told','told','I','A2'],['think','thought','thought','I','A2'],['wear','wore','worn','I','B1'],
+    ['win','won','won','I','A2'],['bring','brought','brought','I','B1'],['build','built','built','I','B1'],
+    ['catch','caught','caught','I','B1'],['drive','drove','driven','I','B1'],['feel','felt','felt','I','A2'],
+    ['keep','kept','kept','I','B1'],['leave','left','left','I','A2'],['lose','lost','lost','I','A2'],
+    ['pay','paid','paid','I','A2'],['read','read','read','I','A2'],['say','said','said','I','A2'],
+    ['sell','sold','sold','I','B1'],['sit','sat','sat','I','A2'],['stand','stood','stood','I','A2'],
+    ['begin','began','begun','I','B1'],['travel','traveled','traveled','R','A2'],['visit','visited','visited','R','A2'],
+    ['play','played','played','R','A2'],['watch','watched','watched','R','A2'],['study','studied','studied','R','A2'],
+    ['work','worked','worked','R','A2'],['call','called','called','R','A2'],['clean','cleaned','cleaned','R','A2'],
+    ['cook','cooked','cooked','R','A2'],['arrive','arrived','arrived','R','A2']
+  ];
+
+  const $ = id => document.getElementById(id);
+  const wheel = $('wheel'), teamsEl = $('teams'), turnText = $('turnText'), roundChip = $('roundChip');
+  const verbText = $('verbText'), challengeLabel = $('challengeLabel'), questionText = $('questionText');
+  const answerArea = $('answerArea'), feedback = $('feedback'), timerText = $('timerText'), powerText = $('powerText');
+
+  let teams = [mkTeam('Team A'), mkTeam('Team B')];
+  let teamIndex = 0, round = 1, current = null, challenge = null, rotation = 0;
+  let timerId = null, timeLeft = 0, soundOn = true, locked = false, attempts = 0, power = null;
+  let stats = {correct:0, wrong:0, verbs:{}};
+
+  function mkTeam(name){ return {name, score:0, streak:0, best:0, shield:false}; }
+  function rand(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+  function norm(v){ return String(v || '').trim().toLowerCase().replace(/[.!?]+$/,''); }
+  function esc(s){ return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+  function beep(freq=440,dur=.08,type='sine',vol=.045){
+    if(!soundOn) return;
+    try{
+      const C = window.AudioContext || window.webkitAudioContext;
+      const ctx = beep.ctx || (beep.ctx = new C());
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = type; o.frequency.value = freq; g.gain.value = vol;
+      o.connect(g); g.connect(ctx.destination); o.start();
+      g.gain.exponentialRampToValueAtTime(.0001, ctx.currentTime + dur);
+      o.stop(ctx.currentTime + dur);
+    }catch(e){}
+  }
+  function sfx(kind){
+    if(kind==='correct'){ beep(650,.08); setTimeout(()=>beep(850,.1),80); }
+    else if(kind==='wrong'){ beep(180,.14,'sawtooth',.03); }
+    else if(kind==='power'){ beep(520,.05); setTimeout(()=>beep(740,.08),60); }
+    else if(kind==='win'){ [440,554,659,880].forEach((f,i)=>setTimeout(()=>beep(f,.16),i*100)); }
+    else beep(330,.06);
+  }
+
+  function getPool(){
+    const type = $('verbTypeSelect').value, level = $('levelSelect').value;
+    return verbs.filter(v =>
+      (type==='Mixed' || (type==='Regular' ? v[3]==='R' : v[3]==='I')) &&
+      (level==='B1' || level==='A2–B1' || v[4]==='A2')
+    );
+  }
+
+  function drawWheel(){
+    wheel.innerHTML = '';
+    const pool = getPool(), shown = pool.slice(0, Math.min(pool.length,20));
+    const NS='http://www.w3.org/2000/svg', n=shown.length;
+    const pol=(r,a)=>({x:200+r*Math.cos((a-90)*Math.PI/180), y:200+r*Math.sin((a-90)*Math.PI/180)});
+    shown.forEach((v,i)=>{
+      const a1=i*360/n, a2=(i+1)*360/n, p1=pol(184,a1), p2=pol(184,a2), mid=(a1+a2)/2, tp=pol(132,mid);
+      const path=document.createElementNS(NS,'path');
+      const colors=['#7c5cff','#24c1ff','#22c55e','#f59e0b','#ec4899'];
+      path.setAttribute('d',`M200 200 L${p1.x} ${p1.y} A184 184 0 0 1 ${p2.x} ${p2.y} Z`);
+      path.setAttribute('fill',colors[i%colors.length]); path.setAttribute('stroke','#0f1220'); path.setAttribute('stroke-width','2');
+      wheel.appendChild(path);
+      const t=document.createElementNS(NS,'text');
+      t.setAttribute('x',tp.x); t.setAttribute('y',tp.y); t.setAttribute('font-size','13'); t.setAttribute('font-weight','800');
+      t.setAttribute('text-anchor','middle'); t.setAttribute('dominant-baseline','middle'); t.setAttribute('fill','#fff');
+      t.setAttribute('transform',`rotate(${mid} ${tp.x} ${tp.y})`); t.textContent=v[0]; wheel.appendChild(t);
+    });
+    const c=document.createElementNS(NS,'circle'); c.setAttribute('cx','200'); c.setAttribute('cy','200'); c.setAttribute('r','34');
+    c.setAttribute('fill','#171b2e'); c.setAttribute('stroke','#4a547d'); c.setAttribute('stroke-width','3'); wheel.appendChild(c);
+  }
+
+  function renderTeams(){
+    const solo = $('modeSelect').value==='Solo';
+    teamsEl.innerHTML='';
+    (solo ? [teams[0]] : teams).forEach((t,i)=>{
+      const d=document.createElement('div');
+      d.className='team '+(i===teamIndex?'active':'');
+      d.innerHTML=`<div class="team-row">
+        <input class="team-name" data-name="${i}" value="${esc(t.name)}" aria-label="Team name">
+        <div class="score">${t.score}</div>
+      </div>
+      <div class="muted" style="font-size:12px;margin-top:4px">🔥 Streak ${t.streak} · Best ${t.best}${t.shield?' · 🛡️':''}</div>
+      <div style="display:flex;gap:6px;margin-top:9px">
+        <button class="btn" style="padding:6px 9px;min-height:auto" data-score="${i},100">+100</button>
+        <button class="btn" style="padding:6px 9px;min-height:auto" data-score="${i},-100">−100</button>
+      </div>`;
+      teamsEl.appendChild(d);
+    });
+    teamsEl.querySelectorAll('[data-name]').forEach(el=>el.addEventListener('change',()=>{
+      teams[+el.dataset.name].name = el.value.trim() || `Team ${String.fromCharCode(65+(+el.dataset.name))}`;
+      updateTurn();
+    }));
+    teamsEl.querySelectorAll('[data-score]').forEach(b=>b.addEventListener('click',()=>{
+      const [i,n]=b.dataset.score.split(',').map(Number);
+      teams[i].score=Math.max(0,teams[i].score+n); renderTeams();
+    }));
+    updateTurn();
+  }
+
+  function updateTurn(){
+    const solo=$('modeSelect').value==='Solo';
+    turnText.textContent=solo?'Solo mode':`${teams[teamIndex].name}'s turn`;
+    roundChip.textContent=`Round ${round} / ${$('roundsSelect').value}`;
+    $('levelChip').textContent=$('levelSelect').value;
+    $('typeChip').textContent=$('verbTypeSelect').value;
+  }
+
+  function stopTimer(){ if(timerId){clearInterval(timerId);timerId=null;} timerText.textContent='—'; }
+  function startTimer(){
+    stopTimer();
+    const sec=+$('timerSelect').value;
+    if(!sec) return;
+    timeLeft=sec; timerText.textContent=timeLeft;
+    timerId=setInterval(()=>{
+      timeLeft--; timerText.textContent=timeLeft;
+      if(timeLeft<=5 && timeLeft>0) beep(300,.035,'square',.018);
+      if(timeLeft<=0){
+        clearInterval(timerId); timerId=null; timerText.textContent='0';
+        feedback.textContent='⏰ TIME’S UP!'; sfx('wrong'); registerWrong(true);
+      }
+    },1000);
+  }
+
+  function maybePower(){
+    power=null; powerText.textContent='No power-up this round';
+    if(!$('powerToggle').checked || Math.random()>.25) return;
+    power=rand(['DOUBLE','SHIELD','SECOND','EXTRA','BOMB','STEAL']);
+    const t=teams[teamIndex];
+    if(power==='SHIELD'){ t.shield=true; powerText.textContent='🛡️ SHIELD — your streak is protected'; }
+    else if(power==='EXTRA'){ powerText.textContent='⏳ EXTRA TIME — +10 seconds'; if(timeLeft){timeLeft+=10;timerText.textContent=timeLeft;} }
+    else if(power==='BOMB'){ t.score=Math.max(0,t.score-100); powerText.textContent='💣 BOMB — 100 points lost'; renderTeams(); }
+    else if(power==='STEAL'){
+      if(teams.length>1){ const other=(teamIndex+1)%teams.length, amt=Math.min(100,teams[other].score); teams[other].score-=amt; t.score+=amt; powerText.textContent=`🔄 STEAL — ${amt} points stolen!`; renderTeams(); }
+      else powerText.textContent='🔄 STEAL — no rival in Solo mode';
+    }
+    else if(power==='DOUBLE') powerText.textContent='⚡ DOUBLE POINTS';
+    else if(power==='SECOND') powerText.textContent='🎯 SECOND CHANCE';
+    sfx('power');
+  }
+
+  function pickChallenge(){
+    const level=$('levelSelect').value, allowSpeak=$('speakingToggle').checked;
+    let pool=['forms','choice','complete','odd'];
+    if(level!=='A2') pool.push('tense','error','story');
+    if(allowSpeak) pool.push('speak');
+    if(level==='B1') pool.push('story','tense','error');
+    challenge=rand(pool);
+  }
+
+  function renderChoices(opts,correct){
+    const uniq=[...new Set(opts)];
+    for(let i=uniq.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[uniq[i],uniq[j]]=[uniq[j],uniq[i]];}
+    answerArea.innerHTML='<div class="answer-grid">'+uniq.map(o=>`<button class="btn" data-choice="${esc(o)}">${esc(o)}</button>`).join('')+'</div>';
+    answerArea.querySelectorAll('[data-choice]').forEach(b=>b.addEventListener('click',()=>{
+      if(norm(b.dataset.choice)===norm(correct)) registerCorrect(100);
+      else registerWrong(false);
+    }));
+  }
+
+  function buildChallenge(){
+    attempts=0; feedback.textContent=''; answerArea.innerHTML=''; pickChallenge();
+    const [base,past,part]=current; verbText.textContent=base.toUpperCase();
+    if(challenge==='forms'){
+      challengeLabel.textContent='⚡ QUICK FIRE'; questionText.textContent='Complete the three forms.';
+      answerArea.innerHTML=`<div class="answer-grid"><input id="a1" class="field" placeholder="Past Simple"><input id="a2" class="field" placeholder="Past Participle"></div><button id="submitAnswer" class="btn primary" style="width:100%;margin-top:10px">Check</button>`;
+    } else if(challenge==='choice'){
+      challengeLabel.textContent='🎯 MULTIPLE CHOICE'; questionText.textContent=`Yesterday I ___ something related to “${base}”. Choose the correct verb form.`; renderChoices([past,part,base,'have '+part],past);
+    } else if(challenge==='complete'){
+      challengeLabel.textContent='🧠 COMPLETE IT'; questionText.textContent=`I have never ______ it before. (${base.toUpperCase()})`;
+      answerArea.innerHTML=`<input id="a1" class="field" placeholder="Type the correct form"><button id="submitAnswer" class="btn primary" style="width:100%;margin-top:10px">Check</button>`;
+    } else if(challenge==='tense'){
+      challengeLabel.textContent='⏳ PAST OR PERFECT?'; questionText.textContent=`Last weekend, I ______. (${base.toUpperCase()})`; renderChoices([past,part,'have '+part,base],past);
+    } else if(challenge==='odd'){
+      challengeLabel.textContent='🔀 WHICH ONE DOESN’T BELONG?'; const fake=base+'ed'; questionText.textContent=`Which form is NOT correct for ${base.toUpperCase()}?`; renderChoices([base,past,part,fake],fake);
+    } else if(challenge==='error'){
+      challengeLabel.textContent='🕵️ ERROR DETECTIVE'; questionText.textContent=`Correct this: “Yesterday I have ${part}.”`;
+      answerArea.innerHTML=`<input id="a1" class="field" placeholder="Write the corrected verb phrase"><button id="submitAnswer" class="btn primary" style="width:100%;margin-top:10px">Check</button>`;
+    } else if(challenge==='story'){
+      challengeLabel.textContent='📖 MINI STORY'; questionText.textContent=`Make a sentence about yesterday using “${past}”.`;
+      answerArea.innerHTML=`<div class="muted" style="font-size:13px;margin-bottom:8px">Teacher decides if the sentence is correct.</div><div class="answer-grid"><button id="teacherCorrect" class="btn good">✅ Correct</button><button id="teacherWrong" class="btn bad">❌ Try Again</button></div>`;
+    } else {
+      challengeLabel.textContent='🎤 SPEAK!'; questionText.textContent=`Make a sentence using “${past}” or “have/has ${part}”.`;
+      answerArea.innerHTML=`<div class="answer-grid"><button id="teacherCorrect" class="btn good">✅ Correct</button><button id="teacherWrong" class="btn bad">❌ Try Again</button></div>`;
+    }
+
+    const submit=$('submitAnswer'); if(submit) submit.addEventListener('click',checkText);
+    const tc=$('teacherCorrect'), tw=$('teacherWrong');
+    if(tc) tc.addEventListener('click',()=>registerCorrect(150));
+    if(tw) tw.addEventListener('click',()=>registerWrong(false));
+
+    startTimer();
+    setTimeout(maybePower,100);
+  }
+
+  function checkText(){
+    const [base,past,part]=current; let ok=false;
+    if(challenge==='forms') ok=norm($('a1').value)===norm(past) && norm($('a2').value)===norm(part);
+    else if(challenge==='complete') ok=norm($('a1').value)===norm(part);
+    else if(challenge==='error'){
+      const a=norm($('a1').value);
+      ok=a.includes(norm(past)) && !a.includes('have '+norm(part));
+    }
+    if(ok) registerCorrect(100); else registerWrong(false);
+  }
+
+  function registerCorrect(basePoints){
+    stopTimer(); if(locked) return; locked=true;
+    const t=teams[teamIndex]; let pts=basePoints;
+    if(timeLeft>=8) pts+=50;
+    if(power==='DOUBLE') pts*=2;
+    if($('levelSelect').value==='B1' && ['story','error','tense'].includes(challenge)) pts+=100;
+    t.score+=pts; t.streak++; t.best=Math.max(t.best,t.streak);
+    if(t.streak>0 && t.streak%5===0){ t.score+=200; feedback.textContent=`🔥 UNSTOPPABLE! +${pts+200} points`; sfx('power'); }
+    else { feedback.textContent=`✅ CORRECT! +${pts} points`; sfx('correct'); }
+    stats.correct++; trackVerb(true); confettiBurst(); renderTeams();
+    setTimeout(finishRound,900);
+  }
+
+  function registerWrong(fromTimer){
+    if(locked) return;
+    attempts++;
+    const t=teams[teamIndex];
+    if(power==='SECOND' && attempts===1 && !fromTimer){ feedback.textContent='🎯 SECOND CHANCE — try once more!'; sfx('wrong'); return; }
+    if(attempts<2 && !fromTimer){ feedback.textContent='❌ Not quite. Try again!'; sfx('wrong'); return; }
+    stopTimer();
+    if(t.shield){ feedback.textContent=`🛡️ Shield saved your streak! Answer: ${current[0]} → ${current[1]} → ${current[2]}`; t.shield=false; }
+    else { t.streak=0; feedback.textContent=`❌ Answer: ${current[0]} → ${current[1]} → ${current[2]}`; }
+    stats.wrong++; trackVerb(false); sfx('wrong'); renderTeams(); locked=true;
+    setTimeout(finishRound,1200);
+  }
+
+  function trackVerb(ok){
+    const k=current[0]; if(!stats.verbs[k]) stats.verbs[k]={c:0,w:0}; stats.verbs[k][ok?'c':'w']++;
+  }
+
+  function nextTeam(){
+    if($('modeSelect').value==='Solo') teamIndex=0;
+    else teamIndex=(teamIndex+1)%teams.length;
+    renderTeams();
+  }
+
+  function finishRound(){
+    locked=false;
+    if(round>=+$('roundsSelect').value){ showPodium(); return; }
+    round++; nextTeam(); current=null;
+    verbText.textContent='—'; challengeLabel.textContent='READY?'; questionText.textContent='Spin again for the next round.';
+    answerArea.innerHTML=''; feedback.textContent=''; powerText.textContent='No power-up yet'; updateTurn();
+  }
+
+  function spinWheel(){
+    if(locked) return;
+    stopTimer();
+    const pool=getPool(); if(!pool.length) return;
+    locked=true; sfx('spin');
+    const shown=pool.slice(0,Math.min(pool.length,20));
+    current=rand(shown);
+    const idx=shown.findIndex(v=>v[0]===current[0]), seg=360/shown.length, target=360-(idx*seg+seg/2);
+    rotation+=1080+((target-(rotation%360)+360)%360);
+    wheel.style.transform=`rotate(${rotation}deg)`;
+    verbText.textContent='SPINNING…'; challengeLabel.textContent='GET READY'; questionText.textContent=''; answerArea.innerHTML=''; feedback.textContent='';
+    setTimeout(()=>{ locked=false; buildChallenge(); }, window.matchMedia('(prefers-reduced-motion: reduce)').matches?80:2450);
+  }
+
+  function confettiBurst(){
+    const box=$('confetti'); box.innerHTML='';
+    if(window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const colors=['#7c5cff','#24c1ff','#22c55e','#f59e0b','#ec4899'];
+    for(let i=0;i<20;i++){
+      const p=document.createElement('i'); p.style.left=Math.random()*100+'%'; p.style.top='0';
+      p.style.background=colors[i%colors.length]; p.style.animationDelay=(Math.random()*.18)+'s'; box.appendChild(p);
+    }
+    setTimeout(()=>box.innerHTML='',1100);
+  }
+
+  function showPodium(){
+    stopTimer(); sfx('win'); $('podiumScreen').classList.remove('hidden');
+    const ranked=[...teams].sort((a,b)=>b.score-a.score);
+    $('podium').innerHTML=ranked.slice(0,3).map((t,i)=>`<div class="podium-col p${i+1}"><div style="font-size:30px">${['🥇','🥈','🥉'][i]}</div><div style="margin-top:8px">${esc(t.name)}</div><div style="font-size:24px;margin-top:6px">${t.score} pts</div></div>`).join('');
+    const total=stats.correct+stats.wrong, acc=total?Math.round(stats.correct/total*100):0;
+    let hardest='—', maxW=-1;
+    Object.entries(stats.verbs).forEach(([k,v])=>{if(v.w>maxW){maxW=v.w;hardest=k;}});
+    const best=Math.max(...teams.map(t=>t.best));
+    $('summaryGrid').innerHTML=[
+      ['✅ Correct',stats.correct],['❌ Mistakes',stats.wrong],['🎯 Accuracy',acc+'%'],['🔥 Best streak',best],['🧠 Hardest verb',hardest]
+    ].map(x=>`<div class="stat"><span class="muted">${x[0]}</span><b>${x[1]}</b></div>`).join('');
+    $('podiumScreen').scrollIntoView({behavior:'smooth',block:'start'});
+  }
+
+  function resetGame(){
+    stopTimer();
+    teams=teams.map((t,i)=>mkTeam(t.name||`Team ${String.fromCharCode(65+i)}`));
+    teamIndex=0; round=1; current=null; rotation=0; wheel.style.transform='rotate(0deg)';
+    stats={correct:0,wrong:0,verbs:{}}; power=null; locked=false;
+    $('podiumScreen').classList.add('hidden');
+    verbText.textContent='—'; challengeLabel.textContent='READY?'; questionText.textContent='Spin the wheel to start.';
+    answerArea.innerHTML=''; feedback.textContent=''; powerText.textContent='No power-up yet';
+    drawWheel(); renderTeams();
+  }
+
+  function adjustTeams(){
+    const n=$('modeSelect').value==='Solo'?1:+$('teamCountSelect').value;
+    while(teams.length<n) teams.push(mkTeam(`Team ${String.fromCharCode(65+teams.length)}`));
+    teams=teams.slice(0,n); teamIndex=Math.min(teamIndex,teams.length-1); renderTeams();
+  }
+
+  $('spinBtn').addEventListener('click',spinWheel);
+  $('soundBtn').addEventListener('click',()=>{soundOn=!soundOn;$('soundBtn').textContent=soundOn?'🔊 Sound':'🔇 Muted';beep(480,.05);});
+  $('showBtn').addEventListener('click',()=>{if(current) feedback.textContent=`👀 ${current[0]} → ${current[1]} → ${current[2]}`;});
+  $('skipBtn').addEventListener('click',()=>{stopTimer();locked=false;finishRound();});
+  $('nextBtn').addEventListener('click',nextTeam);
+  $('endBtn').addEventListener('click',showPodium);
+  $('restartBtn').addEventListener('click',resetGame);
+  $('playAgainBtn').addEventListener('click',resetGame);
+  $('modeSelect').addEventListener('change',adjustTeams);
+  $('teamCountSelect').addEventListener('change',adjustTeams);
+  $('levelSelect').addEventListener('change',()=>{drawWheel();updateTurn();});
+  $('verbTypeSelect').addEventListener('change',()=>{drawWheel();updateTurn();});
+  $('roundsSelect').addEventListener('change',updateTurn);
+
+  drawWheel();
+  renderTeams();
+})();
+</script>
+</body>
+</html>
